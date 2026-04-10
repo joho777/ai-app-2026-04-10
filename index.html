@@ -1,0 +1,1998 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <title>BranchStack Lab — Social Version Control Simulator</title>
+  <style>
+    :root{
+      --bg:#0a0e17;
+      --panel:rgba(255,255,255,.06);
+      --panel2:rgba(255,255,255,.085);
+      --stroke:rgba(255,255,255,.14);
+      --stroke2:rgba(255,255,255,.22);
+      --text:rgba(255,255,255,.9);
+      --muted:rgba(255,255,255,.68);
+      --faint:rgba(255,255,255,.5);
+      --shadow: 0 20px 50px rgba(0,0,0,.45);
+      --glow: 0 0 0 rgba(0,0,0,0);
+      --radius:18px;
+      --radius2:26px;
+      --accent1:#7c3aed;
+      --accent2:#22d3ee;
+      --accent3:#fb7185;
+      --accent4:#a3e635;
+      --warn:#fbbf24;
+      --bad:#fb7185;
+      --good:#34d399;
+      --codebg:rgba(0,0,0,.35);
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:var(--sans);
+      background: radial-gradient(1000px 600px at 15% 10%, rgba(124,58,237,.22), transparent 60%),
+                  radial-gradient(900px 500px at 85% 18%, rgba(34,211,238,.18), transparent 60%),
+                  radial-gradient(1100px 600px at 60% 88%, rgba(251,113,133,.12), transparent 55%),
+                  radial-gradient(800px 500px at 20% 85%, rgba(163,230,53,.09), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+      overflow-x:hidden;
+    }
+
+    a{color:inherit; text-decoration:none}
+
+    .wrap{
+      max-width:1240px;
+      margin:0 auto;
+      padding:28px 18px 80px;
+    }
+
+    header{
+      position:relative;
+      padding:18px 18px 14px;
+      border:1px solid var(--stroke);
+      background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.04));
+      border-radius:var(--radius2);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+
+    header:before{
+      content:"";
+      position:absolute;
+      inset:-1px;
+      background: radial-gradient(800px 200px at 20% 0%, rgba(124,58,237,.30), transparent 60%),
+                  radial-gradient(650px 220px at 70% 10%, rgba(34,211,238,.20), transparent 60%),
+                  radial-gradient(520px 180px at 95% 80%, rgba(251,113,133,.18), transparent 60%);
+      opacity:.75;
+      pointer-events:none;
+      filter: blur(0px);
+    }
+
+    .toprow{
+      position:relative;
+      display:flex;
+      gap:14px;
+      align-items:flex-start;
+      justify-content:space-between;
+      flex-wrap:wrap;
+    }
+
+    .brand{
+      display:flex;
+      gap:14px;
+      align-items:center;
+    }
+
+    .logo{
+      width:44px; height:44px;
+      border-radius:14px;
+      background: conic-gradient(from 210deg, var(--accent1), var(--accent2), var(--accent4), var(--accent3), var(--accent1));
+      box-shadow: 0 18px 30px rgba(0,0,0,.35);
+      position:relative;
+      isolation:isolate;
+    }
+
+    .logo:after{
+      content:"";
+      position:absolute;
+      inset:2px;
+      border-radius:12px;
+      background: rgba(10,14,23,.55);
+      border:1px solid rgba(255,255,255,.22);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+
+    .brand h1{
+      margin:0;
+      font-size:18px;
+      letter-spacing:.2px;
+    }
+
+    .brand p{
+      margin:4px 0 0;
+      color:var(--muted);
+      font-size:13px;
+      max-width:640px;
+      line-height:1.4;
+    }
+
+    .pillrow{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+
+    .pill{
+      padding:8px 10px;
+      border-radius:999px;
+      border:1px solid var(--stroke);
+      background:rgba(255,255,255,.05);
+      font-size:12px;
+      color:var(--muted);
+      display:flex;
+      gap:8px;
+      align-items:center;
+      user-select:none;
+    }
+
+    .pill .dot{
+      width:8px; height:8px; border-radius:999px;
+      background:var(--accent2);
+      box-shadow:0 0 0 4px rgba(34,211,238,.12);
+    }
+
+    .pill strong{color:var(--text); font-weight:600}
+
+    .grid{
+      margin-top:18px;
+      display:grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap:16px;
+      align-items:start;
+    }
+
+    @media (max-width: 980px){
+      .grid{grid-template-columns:1fr}
+    }
+
+    .card{
+      border:1px solid var(--stroke);
+      border-radius:var(--radius);
+      background:linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.04));
+      box-shadow:var(--shadow);
+      position:relative;
+      overflow:hidden;
+    }
+
+    .card .inner{padding:14px 14px 16px}
+
+    .card h2{
+      margin:0 0 8px;
+      font-size:13px;
+      letter-spacing:.18em;
+      text-transform:uppercase;
+      color:rgba(255,255,255,.72);
+    }
+
+    .sub{
+      margin:0;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.45;
+    }
+
+    .row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    .btn{
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--stroke);
+      background:rgba(255,255,255,.06);
+      color:var(--text);
+      font-weight:600;
+      font-size:13px;
+      cursor:pointer;
+      transition: transform .12s ease, border-color .12s ease, background .12s ease;
+      user-select:none;
+    }
+
+    .btn:hover{transform:translateY(-1px); border-color:var(--stroke2); background:rgba(255,255,255,.08)}
+    .btn:active{transform:translateY(0px)}
+    .btn.primary{
+      border-color:rgba(124,58,237,.45);
+      background:linear-gradient(180deg, rgba(124,58,237,.36), rgba(124,58,237,.14));
+    }
+
+    .btn.good{
+      border-color:rgba(52,211,153,.45);
+      background:linear-gradient(180deg, rgba(52,211,153,.26), rgba(52,211,153,.10));
+    }
+
+    .btn.bad{
+      border-color:rgba(251,113,133,.45);
+      background:linear-gradient(180deg, rgba(251,113,133,.24), rgba(251,113,133,.08));
+    }
+
+    .btn.ghost{background:transparent}
+
+    .btn:disabled{
+      opacity:.45;
+      cursor:not-allowed;
+      transform:none;
+    }
+
+    .toggle{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      font-size:13px;
+      color:var(--muted);
+      user-select:none;
+    }
+
+    input[type="range"]{width:180px}
+
+    .kbd{
+      font-family:var(--mono);
+      padding:3px 6px;
+      border:1px solid var(--stroke);
+      background:rgba(0,0,0,.25);
+      border-radius:8px;
+      font-size:12px;
+      color:rgba(255,255,255,.78);
+    }
+
+    .two{
+      margin-top:12px;
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:12px;
+    }
+
+    @media (max-width: 520px){
+      .two{grid-template-columns:1fr}
+    }
+
+    .pane{
+      border:1px solid var(--stroke);
+      border-radius:16px;
+      background:rgba(255,255,255,.05);
+      overflow:hidden;
+    }
+
+    .pane .hdr{
+      padding:10px 12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      border-bottom:1px solid rgba(255,255,255,.10);
+      background:rgba(0,0,0,.14);
+    }
+
+    .pane .hdr .title{font-weight:700; font-size:13px}
+    .pane .hdr .meta{color:var(--muted); font-size:12px}
+
+    .pane .body{padding:10px 12px}
+
+    .list{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      max-height:270px;
+      overflow:auto;
+      padding-right:4px;
+    }
+
+    .item{
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.045);
+      border-radius:14px;
+      padding:10px 10px;
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+      cursor:pointer;
+      transition: border-color .12s ease, transform .12s ease;
+    }
+
+    .item:hover{border-color:rgba(255,255,255,.20); transform:translateY(-1px)}
+
+    .tag{
+      padding:3px 8px;
+      border-radius:999px;
+      font-size:11px;
+      border:1px solid rgba(255,255,255,.16);
+      color:rgba(255,255,255,.78);
+      white-space:nowrap;
+      background:rgba(0,0,0,.18);
+    }
+
+    .tag.agent{border-color:rgba(34,211,238,.35); background:rgba(34,211,238,.10)}
+    .tag.human{border-color:rgba(124,58,237,.35); background:rgba(124,58,237,.12)}
+    .tag.system{border-color:rgba(163,230,53,.35); background:rgba(163,230,53,.11)}
+    .tag.warn{border-color:rgba(251,191,36,.40); background:rgba(251,191,36,.10)}
+
+    .item .main{flex:1; min-width:0}
+    .item .line1{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+    .item .name{font-weight:800; font-size:13px}
+    .item .desc{margin:4px 0 0; color:var(--muted); font-size:12px; line-height:1.35}
+
+    .split{
+      margin-top:12px;
+      display:grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap:12px;
+    }
+
+    @media (max-width: 980px){
+      .split{grid-template-columns:1fr}
+    }
+
+    .canvasWrap{
+      padding:12px;
+    }
+
+    canvas{
+      width:100%;
+      height:420px;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.12);
+      background: radial-gradient(700px 500px at 30% 20%, rgba(124,58,237,.10), transparent 60%),
+                  radial-gradient(700px 500px at 70% 30%, rgba(34,211,238,.08), transparent 60%),
+                  rgba(0,0,0,.26);
+      display:block;
+    }
+
+    .legend{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:10px;
+      color:var(--muted);
+      font-size:12px;
+    }
+
+    .leg{
+      display:flex; align-items:center; gap:8px;
+      padding:6px 8px;
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:999px;
+      background:rgba(255,255,255,.04);
+    }
+
+    .sw{
+      width:10px; height:10px; border-radius:999px;
+      background:var(--accent2);
+      box-shadow:0 0 0 4px rgba(34,211,238,.10);
+    }
+
+    .sw.human{background:var(--accent1); box-shadow:0 0 0 4px rgba(124,58,237,.10)}
+    .sw.agent{background:var(--accent2); box-shadow:0 0 0 4px rgba(34,211,238,.10)}
+    .sw.branch{background:var(--accent4); box-shadow:0 0 0 4px rgba(163,230,53,.10)}
+    .sw.warn{background:var(--warn); box-shadow:0 0 0 4px rgba(251,191,36,.12)}
+
+    .toastHost{
+      position:fixed;
+      right:14px;
+      bottom:14px;
+      z-index:50;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      pointer-events:none;
+    }
+
+    .toast{
+      pointer-events:auto;
+      width:min(420px, calc(100vw - 28px));
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.14);
+      background:linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.05));
+      box-shadow: 0 18px 40px rgba(0,0,0,.5);
+      padding:10px 10px;
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+      animation: pop .22s ease;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    @keyframes pop{from{transform:translateY(8px); opacity:0} to{transform:translateY(0); opacity:1}}
+
+    .toast .ic{
+      width:34px; height:34px;
+      border-radius:12px;
+      background:rgba(0,0,0,.25);
+      border:1px solid rgba(255,255,255,.14);
+      display:grid; place-items:center;
+      flex:0 0 auto;
+    }
+
+    .toast .t{font-weight:800; font-size:13px; margin:0}
+    .toast .b{margin:4px 0 0; color:var(--muted); font-size:12px; line-height:1.35}
+
+    .toast .x{
+      margin-left:auto;
+      background:transparent;
+      border:0;
+      color:rgba(255,255,255,.7);
+      cursor:pointer;
+      font-size:18px;
+      line-height:1;
+      padding:2px 6px;
+    }
+
+    .footer{
+      margin-top:18px;
+      color:rgba(255,255,255,.55);
+      font-size:12px;
+      line-height:1.45;
+    }
+
+    .footer a{color:rgba(255,255,255,.8); text-decoration:underline; text-underline-offset:3px}
+
+    /* Scrollbars */
+    ::-webkit-scrollbar{height:10px; width:10px}
+    ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12); border-radius:999px}
+    ::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.18)}
+
+    /* Mini code block */
+    pre{
+      margin:0;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.12);
+      background:var(--codebg);
+      overflow:auto;
+      font-family:var(--mono);
+      font-size:12px;
+      line-height:1.45;
+      color:rgba(255,255,255,.84);
+      max-height:250px;
+    }
+
+    .muted{color:var(--muted)}
+
+    .kpiRow{
+      margin-top:10px;
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap:10px;
+    }
+
+    @media (max-width: 740px){
+      .kpiRow{grid-template-columns: repeat(2, 1fr)}
+    }
+
+    .kpi{
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.045);
+      border-radius:16px;
+      padding:10px 10px;
+    }
+
+    .kpi .n{font-size:18px; font-weight:900; letter-spacing:.2px}
+    .kpi .l{margin-top:4px; font-size:12px; color:var(--muted)}
+
+    .progress{
+      height:10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.25);
+      overflow:hidden;
+    }
+
+    .bar{height:100%; width:50%; background:linear-gradient(90deg, var(--accent2), var(--accent1));}
+
+    .seg{
+      margin-top:8px;
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+
+    .chip{
+      font-size:12px;
+      padding:8px 10px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.04);
+      cursor:pointer;
+      user-select:none;
+    }
+
+    .chip.active{border-color:rgba(34,211,238,.4); background:rgba(34,211,238,.10)}
+
+    .hr{
+      margin:12px 0;
+      height:1px;
+      background:rgba(255,255,255,.10);
+    }
+
+    .small{
+      font-size:12px;
+      color:rgba(255,255,255,.60);
+      line-height:1.4;
+    }
+
+    .note{
+      border:1px dashed rgba(255,255,255,.18);
+      background:rgba(255,255,255,.035);
+      border-radius:16px;
+      padding:10px 10px;
+      color:rgba(255,255,255,.70);
+      font-size:12px;
+      line-height:1.45;
+    }
+
+    .danger{
+      color:rgba(251,113,133,.95);
+      font-weight:700;
+    }
+
+    .ok{
+      color:rgba(52,211,153,.95);
+      font-weight:700;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="toprow">
+        <div class="brand">
+          <div class="logo" aria-hidden="true"></div>
+          <div>
+            <h1>BranchStack Lab</h1>
+            <p>
+              A social version control simulator inspired by GitButler’s “what comes after Git” pitch: stacked branches,
+              real-time awareness, and AI agents working alongside humans.
+            </p>
+          </div>
+        </div>
+        <div class="pillrow">
+          <div class="pill"><span class="dot"></span>Trend: <strong>Next-gen version control</strong></div>
+          <div class="pill"><span class="dot" style="background:var(--accent1); box-shadow:0 0 0 4px rgba(124,58,237,.12)"></span>Mode: <strong>Simulation</strong></div>
+          <div class="pill"><span class="dot" style="background:var(--accent4); box-shadow:0 0 0 4px rgba(163,230,53,.12)"></span>Branches: <strong id="pillBranches">0</strong></div>
+          <div class="pill"><span class="dot" style="background:var(--warn); box-shadow:0 0 0 4px rgba(251,191,36,.14)"></span>Conflicts: <strong id="pillConflicts">0</strong></div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <div class="inner">
+            <h2>1) Build a team timeline</h2>
+            <p class="sub">
+              Add humans and AI agents, generate changes, stack branches on top of each other, and watch
+              awareness + conflict signals update in real time.
+            </p>
+
+            <div class="row" style="margin-top:12px">
+              <button class="btn primary" id="btnAddHuman">Add human</button>
+              <button class="btn primary" id="btnAddAgent">Add AI agent</button>
+              <button class="btn" id="btnAddBranch">Create branch</button>
+              <button class="btn" id="btnGenerateChange">Generate change</button>
+              <button class="btn" id="btnStack">Stack branch</button>
+              <button class="btn good" id="btnMerge">Merge to trunk</button>
+              <button class="btn bad" id="btnReset">Reset</button>
+            </div>
+
+            <div class="row" style="margin-top:10px">
+              <label class="toggle">
+                Simulation speed
+                <input id="speed" type="range" min="0" max="100" value="35" />
+                <span class="kbd" id="speedLabel">1.0x</span>
+              </label>
+              <label class="toggle">
+                Conflict sensitivity
+                <input id="sensitivity" type="range" min="1" max="10" value="6" />
+                <span class="kbd" id="sensLabel">6/10</span>
+              </label>
+              <label class="toggle">
+                Auto-run
+                <input id="autorun" type="checkbox" />
+                <span class="kbd">A</span>
+              </label>
+              <span class="toggle"><span class="kbd">Space</span> pause/resume</span>
+            </div>
+
+            <div class="kpiRow" id="kpis"></div>
+
+            <div class="split">
+              <div class="pane">
+                <div class="hdr">
+                  <div class="title">Graph</div>
+                  <div class="meta"><span id="metaTicks">0</span> ticks</div>
+                </div>
+                <div class="canvasWrap">
+                  <canvas id="cv" width="1040" height="420"></canvas>
+                  <div class="legend">
+                    <div class="leg"><span class="sw human"></span>Human</div>
+                    <div class="leg"><span class="sw agent"></span>AI agent</div>
+                    <div class="leg"><span class="sw branch"></span>Branch</div>
+                    <div class="leg"><span class="sw warn"></span>Conflict risk</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="pane">
+                <div class="hdr">
+                  <div class="title">Selected</div>
+                  <div class="meta">Click nodes</div>
+                </div>
+                <div class="body">
+                  <div class="seg" id="filterSeg"></div>
+                  <div class="hr"></div>
+                  <div class="note" id="details">Select something in the graph to inspect its context.</div>
+                  <div class="hr"></div>
+                  <pre id="diff"></pre>
+                </div>
+              </div>
+            </div>
+
+            <div class="footer">
+              Inspired by GitButler’s vision of a new layer that fits modern workflows (short-lived branches, stacked work,
+              and humans + agents) described in <a href="https://blog.gitbutler.com/series-a" target="_blank" rel="noreferrer">their Series A post</a>.
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="inner">
+            <h2>2) Social coding signals</h2>
+            <p class="sub">
+              In Git, context often lives in PR descriptions, issues, and chat. In a “social VCS”, context is a first-class object.
+              This panel shows a live “context feed” and lets you run a tiny agent that reads before it codes.
+            </p>
+
+            <div class="two">
+              <div class="pane">
+                <div class="hdr">
+                  <div class="title">Context feed</div>
+                  <div class="meta" id="feedMeta">0 events</div>
+                </div>
+                <div class="body">
+                  <div class="row" style="margin-bottom:10px">
+                    <button class="btn" id="btnAddNote">Add note</button>
+                    <button class="btn" id="btnAddIssue">Add issue</button>
+                    <button class="btn" id="btnAddChat">Add chat</button>
+                    <button class="btn" id="btnClearFeed">Clear</button>
+                  </div>
+                  <div class="list" id="feed"></div>
+                </div>
+              </div>
+
+              <div class="pane">
+                <div class="hdr">
+                  <div class="title">Read-before-code agent</div>
+                  <div class="meta">Toy planner</div>
+                </div>
+                <div class="body">
+                  <p class="small">
+                    Select a branch, then ask the agent to summarize context and propose a safe plan.
+                    This is a local simulation (no network calls).
+                  </p>
+
+                  <div class="row" style="margin-top:8px">
+                    <button class="btn primary" id="btnAgentSummarize">Summarize context</button>
+                    <button class="btn" id="btnAgentPlan">Propose plan</button>
+                    <button class="btn" id="btnAgentPatch">Generate patch</button>
+                  </div>
+
+                  <div class="hr"></div>
+                  <div class="note" id="agentOut">No output yet.</div>
+
+                  <div class="hr"></div>
+                  <div class="small muted">
+                    Tips: create multiple branches and stack them. Then generate changes and watch how the agent proposes safer merges
+                    when it “reads” context first.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="hr"></div>
+            <h2>3) Risk dashboard</h2>
+            <p class="sub">A compact view of how close your team is to conflict and context loss.</p>
+
+            <div class="two" style="margin-top:10px">
+              <div class="kpi">
+                <div class="n" id="riskScore">0</div>
+                <div class="l">Conflict risk score</div>
+                <div class="progress" style="margin-top:8px"><div class="bar" id="riskBar" style="width:0%"></div></div>
+              </div>
+              <div class="kpi">
+                <div class="n" id="contextScore">0</div>
+                <div class="l">Context completeness</div>
+                <div class="progress" style="margin-top:8px"><div class="bar" id="ctxBar" style="width:0%"></div></div>
+              </div>
+            </div>
+
+            <div class="hr"></div>
+            <div class="note">
+              <span class="danger">Conflict risk</span> rises when multiple branches touch the same files and when stacked branches drift.
+              <span class="ok">Context completeness</span> rises when changes include notes/issues/chat links — and when the agent reads them.
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="toastHost" id="toasts" aria-live="polite" aria-atomic="true"></div>
+  </div>
+
+  <script>
+    // BranchStack Lab
+    // A local simulation inspired by GitButler's vision: stacked branches, social coding context, humans + AI agents.
+    // No network calls. Everything is interactive and deterministic-ish (seeded RNG) for repeatable demos.
+
+    /*********************
+     * Utilities
+     *********************/
+    const $ = (sel, el=document) => el.querySelector(sel);
+    const $$ = (sel, el=document) => Array.from(el.querySelectorAll(sel));
+
+    function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
+    function lerp(a,b,t){ return a+(b-a)*t; }
+    function fmt(n){ return (Math.round(n*10)/10).toFixed(1).replace('.0',''); }
+
+    // Lightweight seeded RNG so the demo feels consistent.
+    function mulberry32(seed){
+      let t = seed >>> 0;
+      return function(){
+        t += 0x6D2B79F5;
+        let x = Math.imul(t ^ (t >>> 15), 1 | t);
+        x ^= x + Math.imul(x ^ (x >>> 7), 61 | x);
+        return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    const rng = mulberry32(20260410);
+    function pick(arr){ return arr[Math.floor(rng()*arr.length)]; }
+
+    function uid(prefix){
+      return prefix + '-' + Math.floor(rng()*1e9).toString(16).padStart(8,'0');
+    }
+
+    function nowIso(){
+      const d = new Date();
+      return d.toISOString().slice(11,19);
+    }
+
+    function toast(title, body, kind='info'){
+      const host = $('#toasts');
+      const t = document.createElement('div');
+      t.className = 'toast';
+      const icon = kind === 'good' ? '✓' : kind === 'bad' ? '!' : kind === 'warn' ? '⚑' : '•';
+      t.innerHTML = `
+        <div class="ic">${icon}</div>
+        <div>
+          <p class="t">${title}</p>
+          <p class="b">${body}</p>
+        </div>
+        <button class="x" aria-label="Dismiss">×</button>
+      `;
+      host.appendChild(t);
+      const rm = () => { t.style.opacity='0'; t.style.transform='translateY(6px)'; setTimeout(()=>t.remove(), 160); };
+      t.querySelector('.x').addEventListener('click', rm);
+      setTimeout(rm, 5600);
+    }
+
+    /*********************
+     * Simulation model
+     *********************/
+
+    // We simulate:
+    // - Participants: human / agent
+    // - Branches: each with parent pointer, stack depth, touched files
+    // - Changes: patches on branches
+    // - Context items: notes/issues/chats; branches can link to them
+
+    const FILES = [
+      'api/auth.ts','api/billing.ts','api/search.ts','api/agent.ts','ui/dashboard.tsx','ui/editor.tsx','ui/panels.tsx',
+      'ui/theme.css','core/indexer.rs','core/diff.rs','core/merge.rs','docs/README.md','docs/CONTRIBUTING.md','tests/merge.test.ts'
+    ];
+
+    const CHANGE_INTENTS = [
+      {t:'Refactor', w:1.1},
+      {t:'Bugfix', w:0.9},
+      {t:'New feature', w:1.2},
+      {t:'Docs', w:0.55},
+      {t:'Test', w:0.65},
+      {t:'Perf', w:1.05},
+      {t:'Chore', w:0.5},
+    ];
+
+    const ISSUE_TEMPLATES = [
+      'Login sometimes fails when token expires mid-request',
+      'Editor loses cursor position after auto-format',
+      'Merge preview should show stacked branches',
+      'Add context links to changesets',
+      'Conflict detector fires too late for large diffs',
+      'Agent should read recent chat before proposing changes',
+      'Improve onboarding: explain stacking visually',
+    ];
+
+    const CHAT_TEMPLATES = [
+      'Can someone take the UI theme polish?',
+      'Agent run broke tests on trunk; pausing merges',
+      'I stacked my branch on yours—please don’t force-push',
+      'Heads up: I touched core/merge.rs and diff.rs',
+      'Let’s keep PRs small; stack them if needed',
+      'Conflict risk looks high on billing—coordinate?',
+    ];
+
+    const NOTE_TEMPLATES = [
+      'Remember: preserve context in the change itself, not only in PR text.',
+      'If conflict risk rises, split the change into stacked branches.',
+      'When agents are editing, prefer smaller patches and more context links.',
+      'High-risk files today: merge core + auth. Coordinate before large refactors.',
+    ];
+
+    const state = {
+      ticks:0,
+      paused:false,
+      speed:1,
+      sensitivity:6,
+      participants:[],
+      branches:[],
+      changes:[],
+      contextFeed:[],
+      selected:{type:null, id:null},
+      filter:'all',
+      auto:false,
+      trunkId:'trunk',
+      lastSimMs:0,
+      // derived
+      conflicts:0,
+      riskScore:0,
+      ctxScore:0,
+    };
+
+    function reset(){
+      state.ticks = 0;
+      state.paused = false;
+      state.participants = [];
+      state.branches = [];
+      state.changes = [];
+      state.contextFeed = [];
+      state.selected = {type:null,id:null};
+      state.filter = 'all';
+      state.conflicts = 0;
+      state.riskScore = 0;
+      state.ctxScore = 0;
+
+      // Seed trunk branch
+      state.branches.push({
+        id: state.trunkId,
+        name:'trunk',
+        parent:null,
+        owner:null,
+        createdTick:0,
+        stackDepth:0,
+        merged:false,
+        touchedFiles:new Set(),
+        contextLinks:new Set(),
+        message:'Mainline — always green',
+      });
+
+      addParticipant('human');
+      addParticipant('agent');
+      createBranch();
+      addContext('system', 'note', 'Welcome to BranchStack Lab. Create branches, stack work, and watch conflict signals update.');
+
+      toast('Reset', 'New simulation ready. Try: Add branch → Generate change → Stack → Merge.', 'good');
+      renderAll();
+    }
+
+    function addParticipant(kind){
+      const id = uid(kind);
+      const name = kind === 'human'
+        ? pick(['Ava','Noah','Mina','Leo','Sam','Nia','Jules','Isha','Omar','Yuki'])
+        : pick(['Agent Atlas','Agent Kestrel','Agent Scribe','Agent Nova','Agent Relay','Agent Prism','Agent Tesseract']);
+
+      const p = {
+        id, kind, name,
+        focus: pick(['UI','Core','Docs','Tests','API','Merge','Perf']),
+        reliability: kind==='human' ? lerp(.72,.95,rng()) : lerp(.55,.92,rng()),
+        speed: kind==='human' ? lerp(.55,.85,rng()) : lerp(.75,1.15,rng()),
+        awareness: kind==='human' ? lerp(.55,.85,rng()) : lerp(.35,.80,rng()),
+        lastActiveTick:0,
+      };
+      state.participants.push(p);
+      addContext(p.kind, 'system', `${p.name} joined the workspace (focus: ${p.focus}).`);
+      toast('Participant added', `${p.name} (${p.kind}) is ready.`, 'good');
+      renderAll();
+    }
+
+    function getBranch(id){ return state.branches.find(b=>b.id===id); }
+    function getParticipant(id){ return state.participants.find(p=>p.id===id); }
+
+    function activeBranches(){
+      return state.branches.filter(b=>!b.merged);
+    }
+
+    function createBranch(){
+      const owner = pick(state.participants);
+      const parent = pick(activeBranches());
+      const id = uid('br');
+      const b = {
+        id,
+        name: pick(['spark','mosaic','vector','ember','orbit','saffron','ripple','prism','fuse','granite']) + '-' + Math.floor(rng()*90+10),
+        parent: parent ? parent.id : state.trunkId,
+        owner: owner.id,
+        createdTick: state.ticks,
+        stackDepth: parent ? parent.stackDepth + 1 : 1,
+        merged:false,
+        touchedFiles:new Set(),
+        contextLinks:new Set(),
+        message: 'Working set',
+      };
+      state.branches.push(b);
+      addContext(owner.kind, 'note', `${owner.name} created branch ${b.name} on ${getBranch(b.parent).name}.`);
+      toast('Branch created', `${b.name} stacked on ${getBranch(b.parent).name}.`, 'good');
+      renderAll();
+      return b;
+    }
+
+    function stackBranch(){
+      const bs = activeBranches().filter(b=>b.id!==state.trunkId);
+      if(bs.length < 2){ toast('Need more branches', 'Create at least two branches to stack.', 'warn'); return; }
+      const child = pick(bs);
+      const parent = pick(bs.filter(b=>b.id!==child.id));
+      if(child.parent === parent.id){ toast('Already stacked', `${child.name} is already on ${parent.name}.`, 'warn'); return; }
+      child.parent = parent.id;
+      child.stackDepth = getBranch(parent.id).stackDepth + 1;
+      addContext('system', 'note', `Stacked ${child.name} on top of ${parent.name}.`);
+      toast('Stack updated', `${child.name} → ${parent.name}`, 'good');
+      renderAll();
+    }
+
+    function generateChange(){
+      const bs = activeBranches().filter(b=>b.id!==state.trunkId);
+      if(bs.length === 0){ toast('No branches', 'Create a branch first.', 'warn'); return; }
+      const b = pick(bs);
+      const owner = getParticipant(b.owner);
+      const intent = pick(CHANGE_INTENTS);
+
+      const fileCount = Math.floor(lerp(1, 4, rng() * intent.w));
+      const touched = new Set();
+      while(touched.size < fileCount){
+        // Bias toward owner focus
+        const biased = FILES.filter(f => f.toLowerCase().includes(owner.focus.toLowerCase()));
+        const file = rng() < .55 && biased.length ? pick(biased) : pick(FILES);
+        touched.add(file);
+      }
+
+      const diffLines = Math.floor(lerp(10, 120, rng() * intent.w));
+      const complexity = clamp((diffLines/120) * lerp(.7,1.25,rng()), 0, 1);
+
+      const patch = {
+        id: uid('chg'),
+        branchId: b.id,
+        authorId: owner.id,
+        intent: intent.t,
+        createdTick: state.ticks,
+        touchedFiles: Array.from(touched),
+        diffLines,
+        complexity,
+        msg: `${intent.t}: ${pick(['cleanup','edge-case','UI polish','merge safety','context link','agent hint','perf pass'])}`,
+        // context-aware flags
+        linkedContext:false,
+        readBeforeCode:false,
+        conflictRisk:0,
+        merged:false,
+      };
+
+      // Record touched files
+      patch.touchedFiles.forEach(f => b.touchedFiles.add(f));
+
+      // Probabilistically link context at creation (humans more likely)
+      const baseLinkProb = owner.kind === 'human' ? .45 : .22;
+      if(rng() < baseLinkProb){
+        const ctx = pick(state.contextFeed);
+        if(ctx){
+          b.contextLinks.add(ctx.id);
+          patch.linkedContext = true;
+        }
+      }
+
+      // Compute conflict risk now
+      patch.conflictRisk = computePatchRisk(patch);
+
+      state.changes.push(patch);
+      owner.lastActiveTick = state.ticks;
+
+      const riskWord = patch.conflictRisk > .66 ? 'High' : patch.conflictRisk > .33 ? 'Medium' : 'Low';
+      const kind = patch.conflictRisk > .66 ? 'bad' : patch.conflictRisk > .33 ? 'warn' : 'good';
+
+      addContext(owner.kind, 'note', `${owner.name} authored a ${intent.t} change on ${b.name} touching ${patch.touchedFiles.length} file(s). Risk: ${riskWord}.`);
+      toast('Change generated', `${patch.msg} on ${b.name} (${riskWord} risk).`, kind);
+
+      updateDerived();
+      renderAll();
+    }
+
+    function mergeBranch(){
+      const bs = activeBranches().filter(b=>b.id!==state.trunkId);
+      if(bs.length === 0){ toast('No branches', 'Create a branch first.', 'warn'); return; }
+
+      // Prefer lowest risk branch
+      const scored = bs.map(b => ({b, r: branchRisk(b.id)})).sort((a,b)=>a.r-b.r);
+      const target = scored[0].b;
+
+      const r = scored[0].r;
+      if(r > 0.75){
+        toast('Merge blocked', `Conflict risk too high on ${target.name}. Stack/split, link context, or let the agent plan first.`, 'bad');
+        addContext('system','warn',`Merge blocked for ${target.name} (risk=${fmt(r*100)}%).`);
+        return;
+      }
+
+      // Merge changes into trunk (mark merged)
+      state.changes.filter(c => c.branchId===target.id && !c.merged).forEach(c => c.merged = true);
+      target.merged = true;
+      addContext('system', 'note', `Merged ${target.name} into trunk.`);
+      toast('Merged', `${target.name} merged to trunk.`, 'good');
+
+      updateDerived();
+      renderAll();
+    }
+
+    function computePatchRisk(patch){
+      const b = getBranch(patch.branchId);
+      const parent = getBranch(b.parent);
+
+      // Base risk from complexity + touched files
+      let risk = 0.18 + patch.complexity*0.55 + (patch.touchedFiles.length-1)*0.08;
+
+      // Stack depth increases drift risk
+      risk += clamp((b.stackDepth-1) * 0.06, 0, 0.28);
+
+      // Touching same files as other active branches increases risk
+      const overlap = overlapCount(patch.touchedFiles, b.id);
+      risk += clamp(overlap * (0.06 + state.sensitivity*0.012), 0, 0.45);
+
+      // Context links reduce risk (humans coordinate better)
+      if(patch.linkedContext) risk -= 0.08;
+      if(patch.readBeforeCode) risk -= 0.10;
+
+      // Parent touchedFiles overlap increases risk
+      if(parent && parent.touchedFiles){
+        const parentOverlap = patch.touchedFiles.filter(f => parent.touchedFiles.has(f)).length;
+        risk += clamp(parentOverlap * 0.04, 0, 0.22);
+      }
+
+      return clamp(risk, 0, 1);
+    }
+
+    function overlapCount(files, branchId){
+      const fset = new Set(files);
+      let overlap = 0;
+      for(const b of activeBranches()){
+        if(b.id===branchId || b.id===state.trunkId) continue;
+        for(const f of fset){
+          if(b.touchedFiles.has(f)) overlap++;
+        }
+      }
+      return overlap;
+    }
+
+    function branchRisk(branchId){
+      const ch = state.changes.filter(c => c.branchId===branchId && !c.merged);
+      if(!ch.length) return 0.12;
+      const avg = ch.reduce((s,c)=>s+c.conflictRisk,0)/ch.length;
+      const max = Math.max(...ch.map(c=>c.conflictRisk));
+      // Penalize unlinked context
+      const unlinked = ch.filter(c=>!c.linkedContext).length / ch.length;
+      return clamp(0.45*avg + 0.45*max + 0.18*unlinked, 0, 1);
+    }
+
+    function addContext(actorKind, type, text){
+      const id = uid('ctx');
+      const item = {
+        id,
+        actorKind,
+        type, // note, issue, chat, system, warn
+        text,
+        ts: nowIso(),
+        tick: state.ticks,
+      };
+      state.contextFeed.unshift(item);
+      // bound feed
+      if(state.contextFeed.length > 60) state.contextFeed.length = 60;
+      updateDerived();
+      renderFeed();
+      return item;
+    }
+
+    function updateDerived(){
+      // Conflicts = count of changes over threshold
+      const open = state.changes.filter(c=>!c.merged);
+      state.conflicts = open.filter(c=>c.conflictRisk > 0.72).length;
+
+      const branches = activeBranches().filter(b=>b.id!==state.trunkId);
+      const risks = branches.map(b=>branchRisk(b.id));
+      const risk = risks.length ? risks.reduce((s,x)=>s+x,0)/risks.length : 0;
+      state.riskScore = clamp(risk, 0, 1);
+
+      // Context completeness: proportion of changes linked to some context + branch links
+      const linkedChanges = open.length ? open.filter(c=>c.linkedContext || c.readBeforeCode).length / open.length : 1;
+      const branchLinks = branches.length ? branches.reduce((s,b)=>s + Math.min(1, b.contextLinks.size/2), 0)/branches.length : 1;
+      state.ctxScore = clamp(0.55*linkedChanges + 0.45*branchLinks, 0, 1);
+
+      // UI
+      $('#pillBranches').textContent = String(branches.length);
+      $('#pillConflicts').textContent = String(state.conflicts);
+      $('#metaTicks').textContent = String(state.ticks);
+
+      $('#riskScore').textContent = String(Math.round(state.riskScore*100));
+      $('#riskBar').style.width = String(Math.round(state.riskScore*100)) + '%';
+
+      $('#contextScore').textContent = String(Math.round(state.ctxScore*100));
+      $('#ctxBar').style.width = String(Math.round(state.ctxScore*100)) + '%';
+
+      const km = $('#kpis');
+      km.innerHTML = '';
+      const kpis = [
+        {n: branches.length, l:'Active branches'},
+        {n: open.length, l:'Open changes'},
+        {n: state.contextFeed.length, l:'Context items'},
+        {n: state.conflicts, l:'High-risk changes'},
+      ];
+      for(const k of kpis){
+        const d = document.createElement('div');
+        d.className = 'kpi';
+        d.innerHTML = `<div class="n">${k.n}</div><div class="l">${k.l}</div>`;
+        km.appendChild(d);
+      }
+    }
+
+    /*********************
+     * Agent simulation
+     *********************/
+
+    function selectedBranch(){
+      if(state.selected.type === 'branch') return getBranch(state.selected.id);
+      // if a change is selected, use its branch
+      if(state.selected.type === 'change'){
+        const c = state.changes.find(x=>x.id===state.selected.id);
+        if(c) return getBranch(c.branchId);
+      }
+      // fallback to any active non-trunk
+      return activeBranches().find(b=>b.id!==state.trunkId);
+    }
+
+    function agentSummarize(){
+      const b = selectedBranch();
+      if(!b){ toast('No branch', 'Create a branch to inspect.', 'warn'); return; }
+      const owner = getParticipant(b.owner);
+      const ch = state.changes.filter(c=>c.branchId===b.id && !c.merged);
+      const ctx = Array.from(b.contextLinks).map(id => state.contextFeed.find(x=>x.id===id)).filter(Boolean);
+
+      const touched = Array.from(b.touchedFiles);
+      const risk = branchRisk(b.id);
+
+      const summary = {
+        branch: b.name,
+        owner: owner ? owner.name : 'Unknown',
+        stackDepth: b.stackDepth,
+        openChanges: ch.length,
+        touchedFiles: touched.slice(0, 6),
+        contextLinks: ctx.map(x=>({type:x.type, text:x.text.slice(0,90)})).slice(0,3),
+        risk: Math.round(risk*100),
+      };
+
+      const lines = [];
+      lines.push(`Summary for ${summary.branch}`);
+      lines.push(`- Owner: ${summary.owner}`);
+      lines.push(`- Stack depth: ${summary.stackDepth}`);
+      lines.push(`- Open changes: ${summary.openChanges}`);
+      lines.push(`- Risk estimate: ${summary.risk}%`);
+      lines.push(`- Top touched files: ${summary.touchedFiles.length ? summary.touchedFiles.join(', ') : '(none yet)'}`);
+      if(summary.contextLinks.length){
+        lines.push(`- Linked context:`);
+        for(const c of summary.contextLinks) lines.push(`  - (${c.type}) ${c.text}`);
+      } else {
+        lines.push(`- Linked context: (none) — add notes/issues/chats to reduce drift.`);
+      }
+
+      $('#agentOut').textContent = lines.join('\n');
+      addContext('agent', 'note', `Agent summarized ${b.name} (risk=${summary.risk}%).`);
+      toast('Agent summary', `Produced a quick summary for ${b.name}.`, 'good');
+
+      // Mark read-before-code on existing changes (reduces risk)
+      for(const c of ch){
+        c.readBeforeCode = true;
+        c.conflictRisk = computePatchRisk(c);
+      }
+      updateDerived();
+      renderAll();
+    }
+
+    function agentPlan(){
+      const b = selectedBranch();
+      if(!b){ toast('No branch', 'Create a branch to plan against.', 'warn'); return; }
+      const risk = branchRisk(b.id);
+      const owner = getParticipant(b.owner);
+      const ch = state.changes.filter(c=>c.branchId===b.id && !c.merged);
+
+      const touched = Array.from(b.touchedFiles);
+      const overlaps = touched.map(f => ({f, n: overlapCount([f], b.id)})).sort((a,b)=>b.n-a.n);
+      const topOverlap = overlaps.slice(0,3).filter(x=>x.n>0);
+
+      const plan = [];
+      plan.push(`Plan for ${b.name}`);
+      plan.push(`- Current risk: ${Math.round(risk*100)}%`);
+
+      if(risk > 70){
+        plan.push(`- Recommendation: split into smaller stacked branches and coordinate before merging.`);
+      } else if(risk > 40){
+        plan.push(`- Recommendation: link context to each change and avoid touching highly contended files.`);
+      } else {
+        plan.push(`- Recommendation: safe to proceed. Keep PR small; merge when checks are green.`);
+      }
+
+      if(topOverlap.length){
+        plan.push(`- Hot files (touched by other branches):`);
+        for(const x of topOverlap) plan.push(`  - ${x.f} (overlap score: ${x.n})`);
+      }
+
+      if(ch.length===0){
+        plan.push(`- Next step: generate a small change (10–40 lines) and attach an issue link.`);
+      } else {
+        const biggest = ch.slice().sort((a,b)=>b.diffLines-a.diffLines)[0];
+        plan.push(`- Biggest patch: ${biggest.diffLines} lines (${biggest.intent}). Consider splitting if > 80 lines.`);
+        const unlinked = ch.filter(c=>!c.linkedContext).length;
+        if(unlinked) plan.push(`- Context gap: ${unlinked}/${ch.length} change(s) missing context links.`);
+      }
+
+      // Suggest specific context item to link
+      const ctx = state.contextFeed.find(x => x.type==='issue') || state.contextFeed.find(x => x.type==='chat') || state.contextFeed[0];
+      if(ctx){
+        plan.push(`- Suggested context to link: (${ctx.type}) “${ctx.text.slice(0,70)}...”`);
+        b.contextLinks.add(ctx.id);
+      }
+
+      $('#agentOut').textContent = plan.join('\n');
+      addContext('agent', 'note', `Agent proposed a plan for ${b.name}.`);
+      toast('Agent plan', `Plan ready for ${b.name}.`, 'good');
+
+      // By planning, we slightly reduce risk of unmerged changes
+      for(const c of ch){
+        if(!c.linkedContext && rng() < .65){
+          c.linkedContext = true;
+        }
+        c.readBeforeCode = true;
+        c.conflictRisk = computePatchRisk(c);
+      }
+
+      updateDerived();
+      renderAll();
+    }
+
+    function agentPatch(){
+      const b = selectedBranch();
+      if(!b){ toast('No branch', 'Create a branch first.', 'warn'); return; }
+      const owner = getParticipant(b.owner);
+      const ctxIds = Array.from(b.contextLinks);
+      const ctx = ctxIds.map(id => state.contextFeed.find(x=>x.id===id)).filter(Boolean);
+
+      // Generate a tiny pseudo-patch with context links
+      const file = pick(FILES);
+      const fn = pick(['normalize','buildGraph','detectConflicts','attachContext','summarizeThread','stackBranch']);
+      const lines = Math.floor(lerp(12, 42, rng()));
+
+      const ref = ctx[0] ? `// Context: (${ctx[0].type}) ${ctx[0].text.slice(0,60)}...` : '// Context: (none)';
+
+      const code = [];
+      code.push(ref);
+      code.push(`// Author: ${owner ? owner.name : 'Unknown'} (via agent)`);
+      code.push(`// Branch: ${b.name}`);
+      code.push('');
+      code.push(`export function ${fn}(){`);
+      code.push('  // This is a toy patch. In a real tool, this would be a changeset with preserved context.');
+      code.push('  let score = 0;');
+      for(let i=0;i<lines;i++){
+        const a = pick(['risk','ctx','overlap','depth','drift','signal']);
+        const op = pick(['+','-','*']);
+        const val = fmt(lerp(0.2, 3.2, rng()));
+        code.push(`  score = score ${op} (${a}.length * ${val});`);
+      }
+      code.push('  return Math.max(0, score);');
+      code.push('}');
+
+      $('#diff').textContent = `// file: ${file}\n` + code.join('\n');
+      $('#agentOut').textContent = `Generated a tiny patch scaffold for ${b.name} and attached context hints.\n\nTip: merge may be safer now.`;
+
+      // Also create a real change object representing the patch
+      const patch = {
+        id: uid('chg'),
+        branchId: b.id,
+        authorId: owner ? owner.id : null,
+        intent: 'Agent patch',
+        createdTick: state.ticks,
+        touchedFiles: [file],
+        diffLines: lines,
+        complexity: clamp(lines/80, 0, 1),
+        msg: 'Agent patch: context-aware scaffold',
+        linkedContext: ctx.length > 0,
+        readBeforeCode: true,
+        conflictRisk: 0,
+        merged:false,
+      };
+      b.touchedFiles.add(file);
+      patch.conflictRisk = computePatchRisk(patch);
+      state.changes.push(patch);
+
+      addContext('agent', 'note', `Agent generated a context-aware patch on ${b.name} (${file}).`);
+      toast('Agent patch', `Created a small patch on ${b.name}.`, patch.conflictRisk > .6 ? 'warn' : 'good');
+
+      updateDerived();
+      renderAll();
+    }
+
+    /*********************
+     * Rendering
+     *********************/
+
+    const cv = $('#cv');
+    const ctx2d = cv.getContext('2d');
+
+    const layout = {
+      nodes:[], // {id,type,x,y,r,label,color,sub}
+      edges:[], // {a,b,type}
+      hitIndex:[],
+      cam:{x:0,y:0,zoom:1},
+      hover:null,
+      drag:null,
+    };
+
+    function colorFor(type){
+      if(type==='human') return getComputedStyle(document.documentElement).getPropertyValue('--accent1').trim();
+      if(type==='agent') return getComputedStyle(document.documentElement).getPropertyValue('--accent2').trim();
+      if(type==='branch') return getComputedStyle(document.documentElement).getPropertyValue('--accent4').trim();
+      if(type==='warn') return getComputedStyle(document.documentElement).getPropertyValue('--warn').trim();
+      return 'rgba(255,255,255,.75)';
+    }
+
+    function buildGraph(){
+      const nodes = [];
+      const edges = [];
+
+      // Participants row
+      const ps = state.participants;
+      const baseX = 120;
+      const gapX = 160;
+      const yP = 90;
+      for(let i=0;i<ps.length;i++){
+        const p = ps[i];
+        nodes.push({
+          id:p.id, type:p.kind,
+          x: baseX + i*gapX,
+          y: yP,
+          r: 18,
+          label: p.name,
+          sub: p.focus,
+          color: colorFor(p.kind),
+        });
+      }
+
+      // Branches as a layered stack (based on stack depth)
+      const bs = state.branches;
+      const depthGroups = new Map();
+      for(const b of bs){
+        if(!depthGroups.has(b.stackDepth)) depthGroups.set(b.stackDepth, []);
+        depthGroups.get(b.stackDepth).push(b);
+      }
+
+      const maxDepth = Math.max(...Array.from(depthGroups.keys()));
+      const y0 = 190;
+      const yGap = 78;
+
+      for(let d=0; d<=maxDepth; d++){
+        const g = (depthGroups.get(d) || []).filter(b=>!b.merged);
+        g.sort((a,b)=>a.createdTick-b.createdTick);
+        for(let i=0;i<g.length;i++){
+          const b = g[i];
+          const owner = getParticipant(b.owner);
+          const r = b.id===state.trunkId ? 22 : 18;
+          const risk = b.id===state.trunkId ? 0 : branchRisk(b.id);
+          const c = risk > .66 ? colorFor('warn') : colorFor('branch');
+          nodes.push({
+            id:b.id, type:'branch',
+            x: baseX + i*gapX,
+            y: y0 + d*yGap,
+            r,
+            label: b.name,
+            sub: owner ? owner.name : 'unowned',
+            color: c,
+            risk,
+          });
+
+          // Edge from parent branch
+          if(b.parent){ edges.push({a:b.parent, b:b.id, type:'stack'}); }
+          // Edge from owner
+          if(b.owner){ edges.push({a:b.owner, b:b.id, type:'owns'}); }
+        }
+      }
+
+      // Changes as tiny satellites around their branch
+      const changes = state.changes.filter(c=>!c.merged);
+      const byBranch = new Map();
+      for(const c of changes){
+        if(!byBranch.has(c.branchId)) byBranch.set(c.branchId, []);
+        byBranch.get(c.branchId).push(c);
+      }
+
+      for(const [bid, arr] of byBranch.entries()){
+        const bn = nodes.find(n=>n.id===bid && n.type==='branch');
+        if(!bn) continue;
+        arr.sort((a,b)=>a.createdTick-b.createdTick);
+        for(let i=0;i<arr.length;i++){
+          const c = arr[i];
+          const angle = (i/Math.max(5, arr.length)) * Math.PI*1.7 + 0.3;
+          const dist = 38 + i*10;
+          const x = bn.x + Math.cos(angle)*dist;
+          const y = bn.y + Math.sin(angle)*dist;
+          const rr = 8;
+          const col = c.conflictRisk > .72 ? colorFor('warn') : 'rgba(255,255,255,.72)';
+          nodes.push({
+            id:c.id, type:'change',
+            x,y,r:rr,
+            label: c.intent,
+            sub: `${c.diffLines} lines`,
+            color: col,
+            risk: c.conflictRisk,
+          });
+          edges.push({a:bid, b:c.id, type:'change'});
+        }
+      }
+
+      layout.nodes = nodes;
+      layout.edges = edges;
+      layout.hitIndex = nodes.map(n => ({id:n.id, type:n.type, x:n.x, y:n.y, r:n.r}));
+    }
+
+    function draw(){
+      const dpr = window.devicePixelRatio || 1;
+      const w = cv.clientWidth * dpr;
+      const h = cv.clientHeight * dpr;
+      if(cv.width !== w || cv.height !== h){
+        cv.width = w; cv.height = h;
+      }
+
+      ctx2d.clearRect(0,0,cv.width,cv.height);
+
+      // gentle grid
+      ctx2d.save();
+      ctx2d.globalAlpha = 0.30;
+      ctx2d.strokeStyle = 'rgba(255,255,255,.06)';
+      const step = 44*dpr;
+      for(let x=0;x<cv.width;x+=step){
+        ctx2d.beginPath(); ctx2d.moveTo(x,0); ctx2d.lineTo(x,cv.height); ctx2d.stroke();
+      }
+      for(let y=0;y<cv.height;y+=step){
+        ctx2d.beginPath(); ctx2d.moveTo(0,y); ctx2d.lineTo(cv.width,y); ctx2d.stroke();
+      }
+      ctx2d.restore();
+
+      // Fit content
+      const pad = 80*dpr;
+      const xs = layout.nodes.map(n=>n.x);
+      const ys = layout.nodes.map(n=>n.y);
+      const minX = Math.min(...xs, 0);
+      const maxX = Math.max(...xs, 500);
+      const minY = Math.min(...ys, 0);
+      const maxY = Math.max(...ys, 400);
+
+      const scaleX = (cv.width - pad*2) / Math.max(1, (maxX-minX));
+      const scaleY = (cv.height - pad*2) / Math.max(1, (maxY-minY));
+      const scale = Math.min(scaleX, scaleY);
+
+      const ox = pad - minX*scale;
+      const oy = pad - minY*scale;
+
+      function tx(x){ return x*scale + ox; }
+      function ty(y){ return y*scale + oy; }
+
+      // Edges
+      ctx2d.save();
+      ctx2d.lineWidth = 1.3*dpr;
+
+      for(const e of layout.edges){
+        const a = layout.nodes.find(n=>n.id===e.a);
+        const b = layout.nodes.find(n=>n.id===e.b);
+        if(!a || !b) continue;
+
+        const ax = tx(a.x), ay = ty(a.y);
+        const bx = tx(b.x), by = ty(b.y);
+
+        const grad = ctx2d.createLinearGradient(ax,ay,bx,by);
+        const base = e.type==='owns' ? 'rgba(124,58,237,.40)'
+                   : e.type==='stack' ? 'rgba(163,230,53,.34)'
+                   : 'rgba(255,255,255,.26)';
+        grad.addColorStop(0, base);
+        grad.addColorStop(1, 'rgba(255,255,255,.08)');
+
+        ctx2d.strokeStyle = grad;
+        ctx2d.beginPath();
+        const mx = (ax+bx)/2;
+        const my = (ay+by)/2 - (e.type==='stack' ? 20*dpr : 0);
+        ctx2d.moveTo(ax,ay);
+        ctx2d.quadraticCurveTo(mx,my,bx,by);
+        ctx2d.stroke();
+      }
+      ctx2d.restore();
+
+      // Nodes
+      for(const n of layout.nodes){
+        const x = tx(n.x), y = ty(n.y);
+        const r = n.r * scale;
+
+        const isSelected = (state.selected.type===n.type && state.selected.id===n.id) ||
+          (state.selected.type==='branch' && n.type==='change' && state.changes.find(c=>c.id===n.id)?.branchId===state.selected.id);
+
+        // glow
+        ctx2d.save();
+        const glow = isSelected ? 0.55 : 0.22;
+        ctx2d.globalAlpha = glow;
+        ctx2d.fillStyle = n.color;
+        ctx2d.beginPath();
+        ctx2d.arc(x,y, Math.max(18, r*1.6), 0, Math.PI*2);
+        ctx2d.fill();
+        ctx2d.restore();
+
+        // body
+        ctx2d.save();
+        ctx2d.fillStyle = 'rgba(0,0,0,.30)';
+        ctx2d.beginPath();
+        ctx2d.arc(x,y, r+1.5, 0, Math.PI*2);
+        ctx2d.fill();
+
+        ctx2d.fillStyle = n.color;
+        ctx2d.globalAlpha = 0.95;
+        ctx2d.beginPath();
+        ctx2d.arc(x,y, r, 0, Math.PI*2);
+        ctx2d.fill();
+
+        ctx2d.strokeStyle = 'rgba(255,255,255,.30)';
+        ctx2d.lineWidth = 1.1;
+        ctx2d.globalAlpha = 0.95;
+        ctx2d.beginPath();
+        ctx2d.arc(x,y, r, 0, Math.PI*2);
+        ctx2d.stroke();
+
+        // label
+        const show = n.type!=='change' || scale>0.72;
+        if(show){
+          ctx2d.globalAlpha = 0.95;
+          ctx2d.fillStyle = 'rgba(255,255,255,.86)';
+          ctx2d.font = `700 ${Math.max(11, 12*scale)}px ${getComputedStyle(document.body).fontFamily}`;
+          ctx2d.textAlign = 'left';
+          ctx2d.textBaseline = 'middle';
+          ctx2d.fillText(n.label, x + r + 10, y - 6);
+
+          ctx2d.globalAlpha = 0.65;
+          ctx2d.font = `500 ${Math.max(10, 11*scale)}px ${getComputedStyle(document.body).fontFamily}`;
+          ctx2d.fillText(n.sub || '', x + r + 10, y + 10);
+        }
+
+        // risk badge for branches
+        if(n.type==='branch' && n.id!==state.trunkId){
+          const rr = n.r*scale;
+          const badge = clamp(n.risk||0,0,1);
+          const bw = 8 + 28*badge;
+          ctx2d.globalAlpha = 0.9;
+          ctx2d.fillStyle = badge>0.66 ? 'rgba(251,191,36,.9)' : badge>0.33 ? 'rgba(34,211,238,.85)' : 'rgba(52,211,153,.85)';
+          ctx2d.beginPath();
+          ctx2d.roundRect(x-rr, y+rr+6, bw, 6, 999);
+          ctx2d.fill();
+        }
+
+        ctx2d.restore();
+      }
+
+      // hit index uses world coords; cache transform for pointer mapping
+      layout._tx = tx;
+      layout._ty = ty;
+      layout._scale = scale;
+      layout._ox = ox;
+      layout._oy = oy;
+      layout._dpr = dpr;
+    }
+
+    // polyfill roundRect if needed
+    if(!CanvasRenderingContext2D.prototype.roundRect){
+      CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r){
+        const rr = Math.min(r, w/2, h/2);
+        this.beginPath();
+        this.moveTo(x+rr,y);
+        this.arcTo(x+w,y,x+w,y+h,rr);
+        this.arcTo(x+w,y+h,x,y+h,rr);
+        this.arcTo(x,y+h,x,y,rr);
+        this.arcTo(x,y,x+w,y,rr);
+        this.closePath();
+        return this;
+      };
+    }
+
+    function pointerToWorld(ev){
+      const rect = cv.getBoundingClientRect();
+      const dpr = layout._dpr || 1;
+      const px = (ev.clientX - rect.left) * dpr;
+      const py = (ev.clientY - rect.top) * dpr;
+      const scale = layout._scale || 1;
+      const x = (px - (layout._ox||0)) / scale;
+      const y = (py - (layout._oy||0)) / scale;
+      return {x,y, px,py};
+    }
+
+    function pickNodeAt(world){
+      let best = null;
+      for(const n of layout.nodes){
+        const dx = world.x - n.x;
+        const dy = world.y - n.y;
+        const rr = n.r;
+        if(dx*dx + dy*dy <= rr*rr){
+          // prefer smaller nodes if overlapping (changes over branches)
+          if(!best || n.r < best.r) best = n;
+        }
+      }
+      return best;
+    }
+
+    function renderDetails(){
+      const box = $('#details');
+      const diff = $('#diff');
+      diff.textContent = '';
+
+      if(!state.selected.type){
+        box.textContent = 'Select something in the graph to inspect its context.';
+        return;
+      }
+
+      if(state.selected.type==='human' || state.selected.type==='agent'){
+        const p = getParticipant(state.selected.id);
+        if(!p){ box.textContent='Not found.'; return; }
+        const b = state.branches.filter(x=>x.owner===p.id && !x.merged);
+        const lines = [];
+        lines.push(`${p.name} (${p.kind})`);
+        lines.push(`Focus: ${p.focus}`);
+        lines.push(`Reliability: ${Math.round(p.reliability*100)}%`);
+        lines.push(`Speed: ${Math.round(p.speed*100)}%`);
+        lines.push(`Awareness: ${Math.round(p.awareness*100)}%`);
+        lines.push('');
+        lines.push(`Active branches: ${b.length}`);
+        for(const br of b.slice(0,5)){
+          lines.push(`- ${br.name} (depth ${br.stackDepth}, risk ${Math.round(branchRisk(br.id)*100)}%)`);
+        }
+        box.textContent = lines.join('\n');
+        return;
+      }
+
+      if(state.selected.type==='branch'){
+        const b = getBranch(state.selected.id);
+        if(!b){ box.textContent='Not found.'; return; }
+        const owner = getParticipant(b.owner);
+        const ch = state.changes.filter(c=>c.branchId===b.id && !c.merged);
+        const r = branchRisk(b.id);
+
+        const ctx = Array.from(b.contextLinks).map(id => state.contextFeed.find(x=>x.id===id)).filter(Boolean);
+        const lines = [];
+        lines.push(`Branch: ${b.name}`);
+        lines.push(`Owner: ${owner ? owner.name : 'Unknown'}`);
+        lines.push(`Parent: ${getBranch(b.parent)?.name || '(none)'}`);
+        lines.push(`Stack depth: ${b.stackDepth}`);
+        lines.push(`Open changes: ${ch.length}`);
+        lines.push(`Risk: ${Math.round(r*100)}%`);
+        lines.push(`Touched files: ${Array.from(b.touchedFiles).slice(0,10).join(', ') || '(none)'}`);
+        lines.push('');
+        if(ctx.length){
+          lines.push('Linked context:');
+          for(const c of ctx.slice(0,6)) lines.push(`- (${c.type}) ${c.text}`);
+        } else {
+          lines.push('Linked context: (none)');
+        }
+        box.textContent = lines.join('\n');
+
+        const sample = ch[0];
+        if(sample){
+          diff.textContent = pseudoDiff(sample);
+        }
+        return;
+      }
+
+      if(state.selected.type==='change'){
+        const c = state.changes.find(x=>x.id===state.selected.id);
+        if(!c){ box.textContent='Not found.'; return; }
+        const b = getBranch(c.branchId);
+        const p = getParticipant(c.authorId);
+        const lines = [];
+        lines.push(`Change: ${c.msg}`);
+        lines.push(`Branch: ${b ? b.name : 'Unknown'}`);
+        lines.push(`Author: ${p ? p.name : 'Unknown'}`);
+        lines.push(`Intent: ${c.intent}`);
+        lines.push(`Diff: ${c.diffLines} lines`);
+        lines.push(`Risk: ${Math.round(c.conflictRisk*100)}%`);
+        lines.push(`Linked context: ${c.linkedContext ? 'yes' : 'no'}`);
+        lines.push(`Read-before-code: ${c.readBeforeCode ? 'yes' : 'no'}`);
+        lines.push(`Touched: ${c.touchedFiles.join(', ')}`);
+        box.textContent = lines.join('\n');
+        diff.textContent = pseudoDiff(c);
+        return;
+      }
+
+      box.textContent = 'Select something else.';
+    }
+
+    function pseudoDiff(change){
+      const head = [];
+      head.push(`diff --git a/${change.touchedFiles[0]} b/${change.touchedFiles[0]}`);
+      head.push(`index ${Math.floor(rng()*9999).toString(16)}..${Math.floor(rng()*9999).toString(16)} 100644`);
+      head.push(`--- a/${change.touchedFiles[0]}`);
+      head.push(`+++ b/${change.touchedFiles[0]}`);
+      head.push(`@@ -1,${Math.floor(change.diffLines/2)} +1,${change.diffLines} @@`);
+
+      const lines = [];
+      const n = Math.min(40, change.diffLines);
+      for(let i=0;i<n;i++){
+        const sign = rng() < .48 ? '+' : '-';
+        const word = pick(['context','stack','branch','merge','risk','signal','agent','aware','diff','preview','thread','link']);
+        const frag = pick(['normalize','guard','compute','hydrate','render','schedule','validate','compose','serialize','attach']);
+        lines.push(`${sign} ${frag}_${word}(${fmt(lerp(0.2, 2.9, rng()))});`);
+      }
+
+      return head.concat(lines).join('\n');
+    }
+
+    function renderFeed(){
+      const feed = $('#feed');
+      const meta = $('#feedMeta');
+      meta.textContent = `${state.contextFeed.length} events`;
+      feed.innerHTML = '';
+
+      const filtered = state.filter==='all' ? state.contextFeed : state.contextFeed.filter(x=>x.type===state.filter);
+
+      for(const item of filtered.slice(0, 50)){
+        const el = document.createElement('div');
+        el.className = 'item';
+        const tagClass = item.actorKind === 'human' ? 'human' : item.actorKind === 'agent' ? 'agent' : item.type==='warn' ? 'warn' : 'system';
+        el.innerHTML = `
+          <span class="tag ${tagClass}">${item.type}</span>
+          <div class="main">
+            <div class="line1"><span class="name">${item.ts}</span><span class="tag" style="opacity:.8">${item.actorKind}</span></div>
+            <div class="desc">${escapeHtml(item.text)}</div>
+          </div>
+        `;
+        el.addEventListener('click', () => {
+          // link to selected branch if text mentions one
+          const br = state.branches.find(b => item.text.includes(b.name));
+          if(br){
+            state.selected = {type:'branch', id: br.id};
+            toast('Context linked', `Selected branch ${br.name}.`, 'good');
+            renderAll();
+          } else {
+            toast('Context item', 'No branch referenced; add branch name in notes to link it.', 'warn');
+          }
+        });
+        feed.appendChild(el);
+      }
+    }
+
+    function escapeHtml(s){
+      return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    function renderFilterSeg(){
+      const seg = $('#filterSeg');
+      const opts = [
+        {k:'all', l:'All'},
+        {k:'note', l:'Notes'},
+        {k:'issue', l:'Issues'},
+        {k:'chat', l:'Chat'},
+        {k:'warn', l:'Warnings'},
+      ];
+      seg.innerHTML = '';
+      for(const o of opts){
+        const c = document.createElement('div');
+        c.className = 'chip' + (state.filter===o.k ? ' active' : '');
+        c.textContent = o.l;
+        c.addEventListener('click', () => { state.filter=o.k; renderFilterSeg(); renderFeed(); });
+        seg.appendChild(c);
+      }
+    }
+
+    function renderAll(){
+      updateDerived();
+      renderFilterSeg();
+      renderFeed();
+      buildGraph();
+      draw();
+      renderDetails();
+    }
+
+    /*********************
+     * Interactions
+     *********************/
+
+    cv.addEventListener('mousemove', (ev) => {
+      const w = pointerToWorld(ev);
+      const n = pickNodeAt(w);
+      layout.hover = n;
+      cv.style.cursor = n ? 'pointer' : 'default';
+    });
+
+    cv.addEventListener('click', (ev) => {
+      const w = pointerToWorld(ev);
+      const n = pickNodeAt(w);
+      if(!n){
+        state.selected = {type:null,id:null};
+        renderAll();
+        return;
+      }
+
+      state.selected = {type:n.type==='change' ? 'change' : n.type==='branch' ? 'branch' : n.type, id:n.id};
+      renderAll();
+    });
+
+    // Buttons
+    $('#btnAddHuman').addEventListener('click', () => addParticipant('human'));
+    $('#btnAddAgent').addEventListener('click', () => addParticipant('agent'));
+    $('#btnAddBranch').addEventListener('click', () => createBranch());
+    $('#btnGenerateChange').addEventListener('click', () => generateChange());
+    $('#btnStack').addEventListener('click', () => stackBranch());
+    $('#btnMerge').addEventListener('click', () => mergeBranch());
+    $('#btnReset').addEventListener('click', () => reset());
+
+    $('#btnAddNote').addEventListener('click', () => {
+      addContext('human','note', pick(NOTE_TEMPLATES));
+      toast('Note added', 'Added a note to the context feed.', 'good');
+      renderAll();
+    });
+    $('#btnAddIssue').addEventListener('click', () => {
+      addContext('human','issue', pick(ISSUE_TEMPLATES));
+      toast('Issue added', 'Added an issue to the context feed.', 'good');
+      renderAll();
+    });
+    $('#btnAddChat').addEventListener('click', () => {
+      addContext('human','chat', pick(CHAT_TEMPLATES));
+      toast('Chat added', 'Added a chat message.', 'good');
+      renderAll();
+    });
+    $('#btnClearFeed').addEventListener('click', () => {
+      state.contextFeed = [];
+      toast('Cleared', 'Context feed cleared.', 'warn');
+      renderAll();
+    });
+
+    $('#btnAgentSummarize').addEventListener('click', () => agentSummarize());
+    $('#btnAgentPlan').addEventListener('click', () => agentPlan());
+    $('#btnAgentPatch').addEventListener('click', () => agentPatch());
+
+    // Sliders
+    $('#speed').addEventListener('input', (ev) => {
+      const v = Number(ev.target.value);
+      // Map 0..100 to 0.25x..2.5x nonlinearly
+      state.speed = lerp(0.25, 2.5, (v/100) ** 1.2);
+      $('#speedLabel').textContent = fmt(state.speed) + 'x';
+    });
+
+    $('#sensitivity').addEventListener('input', (ev) => {
+      state.sensitivity = Number(ev.target.value);
+      $('#sensLabel').textContent = state.sensitivity + '/10';
+      // Recompute risks
+      for(const c of state.changes.filter(x=>!x.merged)) c.conflictRisk = computePatchRisk(c);
+      updateDerived();
+      renderAll();
+    });
+
+    $('#autorun').addEventListener('change', (ev) => {
+      state.auto = !!ev.target.checked;
+      toast('Auto-run', state.auto ? 'Simulation will generate events periodically.' : 'Auto-run paused.', state.auto ? 'good' : 'warn');
+    });
+
+    // Keyboard
+    window.addEventListener('keydown', (ev) => {
+      if(ev.key===' '){
+        ev.preventDefault();
+        state.paused = !state.paused;
+        toast(state.paused ? 'Paused' : 'Resumed', state.paused ? 'Simulation paused.' : 'Simulation running.', state.paused ? 'warn' : 'good');
+      }
+      if(ev.key.toLowerCase()==='a'){
+        state.auto = !state.auto;
+        $('#autorun').checked = state.auto;
+        toast('Auto-run', state.auto ? 'Enabled.' : 'Disabled.', state.auto ? 'good' : 'warn');
+      }
+      if(ev.key.toLowerCase()==='g') generateChange();
+      if(ev.key.toLowerCase()==='b') createBranch();
+      if(ev.key.toLowerCase()==='m') mergeBranch();
+    });
+
+    /*********************
+     * Simulation loop
+     *********************/
+
+    function simStep(){
+      if(state.paused) return;
+      state.ticks++;
+
+      // Drift: deeper stacks slowly accumulate risk by touching parent files
+      for(const b of activeBranches().filter(b=>b.id!==state.trunkId)){
+        const parent = getBranch(b.parent);
+        if(!parent) continue;
+
+        // occasional drift event
+        if(rng() < (0.012 * state.speed)){
+          const f = pick(Array.from(parent.touchedFiles));
+          if(f){
+            b.touchedFiles.add(f);
+            addContext('system','warn',`Drift: ${b.name} now also touches ${f} because ${parent.name} changed.`);
+            toast('Stack drift', `${b.name} picked up drift from ${parent.name}.`, 'warn');
+          }
+        }
+      }
+
+      // Auto events
+      if(state.auto){
+        const p = rng();
+        if(p < 0.020 * state.speed) addParticipant(rng()<.55 ? 'human' : 'agent');
+        else if(p < 0.060 * state.speed) createBranch();
+        else if(p < 0.140 * state.speed) generateChange();
+        else if(p < 0.185 * state.speed) stackBranch();
+        else if(p < 0.220 * state.speed) mergeBranch();
+        else if(p < 0.280 * state.speed) addContext('human','chat', pick(CHAT_TEMPLATES));
+      }
+
+      // Update risk on open changes periodically
+      if(state.ticks % 3 === 0){
+        for(const c of state.changes.filter(x=>!x.merged)) c.conflictRisk = computePatchRisk(c);
+      }
+
+      // Occasionally emit conflict warning if score is high
+      if(state.riskScore > 0.68 && rng() < 0.08 * state.speed){
+        const b = activeBranches().filter(b=>b.id!==state.trunkId).sort((a,b)=>branchRisk(b.id)-branchRisk(a.id))[0];
+        if(b){
+          addContext('system','warn',`Conflict detector: ${b.name} risk is ${Math.round(branchRisk(b.id)*100)}%. Consider splitting/stacking with more context.`);
+          toast('Conflict detector', `${b.name} is trending risky.`, 'bad');
+        }
+      }
+
+      updateDerived();
+      renderAll();
+    }
+
+    let last = performance.now();
+    function loop(t){
+      const dt = t - last;
+      last = t;
+      // Use speed to control tick rate
+      const tickEvery = 900 / state.speed;
+      state.lastSimMs += dt;
+      while(state.lastSimMs >= tickEvery){
+        state.lastSimMs -= tickEvery;
+        simStep();
+      }
+      requestAnimationFrame(loop);
+    }
+
+    // Boot
+    reset();
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>
